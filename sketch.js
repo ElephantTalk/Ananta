@@ -9,7 +9,6 @@ function setup() {
   slider.style("width", "80px");
   slider.input(polySides);
   noOfSides = 3;
-  hexGrid();
 }
 
 function polySides() {
