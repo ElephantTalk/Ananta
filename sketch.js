@@ -1,26 +1,29 @@
-let slider;
+let nSlider;
+let rSlider;
 let noOfSides;
+let radius;
 let midPoints;
 
 function setup() {
   createCanvas(400, 400);
-  slider = createSlider(3, 10, 3, 1);
-  slider.position(width + 20, 10);
-  slider.style("width", "80px");
-  slider.input(polySides);
-  noOfSides = 3;
+  nSlider = new ArraySlider("Sides", [3, 4, 5, 6, 7, 8, 9, 10], 1, reset);
+  rSlider = new Slider("Radius", 20, 200, 100, 1, reset);
+
+  reset();
 }
 
-function polySides() {
-  noOfSides = slider.value();
+function reset() {
+  noOfSides = nSlider.value();
+  radius = rSlider.value();
   draw();
 }
+
 function draw() {
   background(0);
 
   push();
   translate(width * 0.5, height * 0.5);
-  polygon(0, 0, 100, noOfSides);
+  polygon(0, 0, radius, noOfSides);
   // subPoly(0, 0, 100, noOfSides);
   // star(0, 0, 5, 100, noOfSides);
 
@@ -37,7 +40,7 @@ function polygon(x, y, radius, npoints) {
 
     vertex(sx, sy);
     arr.push([sx, sy]);
-    console.log(arr);
+    // console.log(arr);
   }
   endShape(CLOSE);
 }
