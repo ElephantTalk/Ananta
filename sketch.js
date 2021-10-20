@@ -1,74 +1,141 @@
-let nSlider;
-let rSlider;
-let noOfSides;
-let radius;
-let midPoints;
-var arr = [];
+var polys = [];
 
-function setup() {
-  createCanvas(400, 400);
-  colorMode(HSB, 100);
-  nSlider = new ArraySlider("Sides", [3, 4, 5, 6, 7, 8, 9, 10], 1, reset);
-  rSlider = new Slider("Radius", 20, 200, 100, 1, reset);
+var angle = 10;
+var delta = 10;
 
-  fillHueSlider = new Slider("Fill Color", 0, 100, 64);
-  fillBrightnessSlider = new Slider("Fill Brightness", 0, 100, 100);
-  strokeHueSlider = new Slider("Line Color", 0, 100, 14);
-  strokeBrightnessSlider = new Slider("Line Brightness", 0, 100, 1000);
+var tilingTypeSelect;
+var gridCheck;
 
-  reset();
+let song;
+let playPauseButton;
+let amp;
+let fft;
+
+let bgHue = 0;
+let hankinHue = 180;
+
+function preload() {
+  song = loadSound("taksim-makam-improv-dance-uzzal.mp3");
 }
 
-function reset() {
-  noOfSides = nSlider.value();
-  radius = rSlider.value();
-  draw();
+function setup() {
+  var canvas = createCanvas(windowWidth, windowHeight);
+
+  canvas.drop(gotFile);
+
+  song.play();
+  playPauseButton = createButton("Play");
+  playPauseButton.mousePressed(togglePlay);
+  amp = new p5.Amplitude();
+  amp.toggleNormalize(true);
+  fft = new p5.FFT();
+
+  background(51);
+  tilingTypeSelect = select("#tiling");
+  tilingTypeSelect.changed(chooseTiling);
+  gridCheck = select("#showGrid");
+  chooseTiling();
+}
+
+function gotFile(file) {
+  if (file.type === "audio") {
+    song = loadSound(file, song.stop());
+  } else {
+    alert("Not an audio file!");
+  }
+}
+
+function togglePlay() {
+  if (!song.isPlaying()) {
+    song.play();
+    playPauseButton.html("Pause");
+  } else {
+    song.pause();
+    playPauseButton.html("Play");
+  }
 }
 
 function draw() {
-  background(0);
+  fft.analyze();
+  colorMode(HSB);
+  background(bgHue % 360, 100, 100);
+  amp.smooth(0.9);
+  angle = map(amp.getLevel(), 0, 1, 0, 90);
+  //console.log(angle, amp.getLevel());
 
-  push();
-  translate(width * 0.5, height * 0.5);
-  polygon(0, 0, radius, noOfSides);
-  // subPoly(0, 0, 100, noOfSides);
-  star(0, 0, 5, -radius, noOfSides);
+  fft.smooth(0.9);
+  delta = map(fft.getEnergy("bass"), 0, 255, 0, 50);
+  //console.log(delta, fft.getEnergy("bass"));
 
-  pop();
-  // console.log(arr);
+  for (var i = 0; i < polys.length; i++) {
+    angle += Math.sin(i);
+    delta += Math.sin(i);
+    polys[i].hankin();
+    polys[i].show();
+  }
+  bgHue++;
+  hankinHue++;
 }
 
-function polygon(x, y, radius, npoints) {
-  let angle = TWO_PI / npoints;
-  beginShape();
-  for (let a = 0; a < TWO_PI; a += angle) {
-    let sx = x + cos(a) * radius;
-    let sy = y + sin(a) * radius;
-
-    vertex(sx, sy);
-  }
-  fill(fillHueSlider.value(), 100, 100, fillBrightnessSlider.value());
-  stroke(strokeHueSlider.value(), 100, 100, strokeBrightnessSlider.value());
-  endShape(CLOSE);
+function octSquareTiling() {
+  var octSqTiles = new SquareOctagonTiling(50);
+  octSqTiles.buildGrid();
+  polys = octSqTiles.polys;
 }
 
-function star(x, y, radius1, radius2, npoints) {
-  let angle = TWO_PI / npoints;
-  let halfAngle = angle / 2.0;
-  strokeWeight(2);
-  beginShape();
-  for (let a = 0; a < TWO_PI; a += angle) {
-    let sx = x + cos(a) * radius2;
-    let sy = y + sin(a) * radius2;
-    // let sx = radius1 * cos(a * angle) + x;
-    // let sy = radius1 * sin(a * angle) + y;
-    vertex(sx, sy);
-    sx = x + cos(a + halfAngle) * radius1;
-    sy = y + sin(a + halfAngle) * radius1;
+function hexTiling() {
+  var hexTiles = new HexagonalTiling(50);
+  hexTiles.buildGrid();
+  polys = hexTiles.polys;
+}
 
-    // sx = x + cos(a + halfAngle) * radius2;
-    // sy = y + sin(a + halfAngle) * radius2;
-    vertex(sx, sy);
+function hexTriangleSquareTiling() {
+  var tiles = new HexaTriangleSquareTiling(50);
+  tiles.buildGrid();
+  polys = tiles.polys;
+}
+
+function squareTiling() {
+  polys = [];
+  var inc = height / 13;
+  for (var x = 0; x < width; x += inc) {
+    for (var y = 0; y < height; y += inc) {
+      var poly = new Polygon(4);
+      poly.addVertex(x, y);
+      poly.addVertex(x + inc, y);
+      poly.addVertex(x + inc, y + inc);
+      poly.addVertex(x, y + inc);
+      poly.close();
+      polys.push(poly);
+    }
   }
-  endShape(CLOSE);
+}
+
+function dodecaHexSquareTiling() {
+  var tiles = new DodecaHexaSquareTiling(50);
+  tiles.buildGrid();
+  polys = tiles.polys;
+}
+
+function chooseTiling() {
+  switch (tilingTypeSelect.value()) {
+    case "4.8.8":
+      octSquareTiling();
+      break;
+    case "square":
+      squareTiling();
+      break;
+    case "hexagonal":
+      hexTiling();
+      break;
+    case "dodeca_hex_square":
+      dodecaHexSquareTiling();
+      break;
+    case "hexa_triangle_square":
+      hexTriangleSquareTiling();
+      break;
+    default:
+      hexTriangleSquareTiling();
+      break;
+  }
 }
