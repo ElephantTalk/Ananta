@@ -23,8 +23,8 @@ function setup() {
 
   canvas.drop(gotFile);
 
-  song.play();
-  playPauseButton = createButton("Play");
+  song.loop();
+  playPauseButton = createButton("Pause");
   playPauseButton.mousePressed(togglePlay);
   amp = new p5.Amplitude();
   amp.toggleNormalize(true);
@@ -46,12 +46,12 @@ function gotFile(file) {
 }
 
 function togglePlay() {
-  if (!song.isPlaying()) {
-    song.play();
-    playPauseButton.html("Pause");
-  } else {
+  if (song.isLooping()) {
     song.pause();
     playPauseButton.html("Play");
+  } else {
+    song.loop();
+    playPauseButton.html("Pause");
   }
 }
 
