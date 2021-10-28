@@ -15,7 +15,7 @@ let bgHue = 0;
 let hankinHue = 180;
 
 function preload() {
-  song = loadSound("taksim-makam-improv-dance-uzzal.mp3");
+  song = loadSound("OckeghemKyrie.mp3");
 }
 
 function setup() {
